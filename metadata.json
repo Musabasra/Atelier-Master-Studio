@@ -1,0 +1,7 @@
+{
+  "name": "Atelier: Master Studio",
+  "description": "A professional desktop fashion illustration suite featuring AI-assisted line refinement, fabric texturing, and mobile sync capabilities.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
