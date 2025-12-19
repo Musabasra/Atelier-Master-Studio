@@ -97,13 +97,13 @@ const SketchCanvas = () => {
     <div className="flex h-full w-full bg-neutral-100 overflow-hidden relative">
       
       {/* --- FLOATING LEFT TOOLBAR (Brushes/Tools) --- */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-charcoal p-3 rounded-2xl flex flex-col gap-4 shadow-xl z-50">
-        <button onClick={() => setTool('brush')} className={tool === 'brush' ? 'text-gold' : 'text-white/40'}><Pencil /></button>
-        <button onClick={() => setTool('bucket')} className={tool === 'bucket' ? 'text-gold' : 'text-white/40'}><PaintBucket /></button>
-        <button onClick={() => setTool('eraser')} className={tool === 'eraser' ? 'text-gold' : 'text-white/40'}><Eraser /></button>
-        <div className="h-[1px] bg-white/10 my-2" />
-        <button onClick={() => setIsMirroring(!isMirroring)} className={isMirroring ? 'text-gold' : 'text-white/40'}><Columns /></button>
-        <button onClick={() => {}} className="text-white/40"><Undo2 /></button>
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#1a1a1a] p-3 rounded-2xl flex flex-col gap-5 shadow-2xl border border-white/10 z-50">
+        <button onClick={() => setTool('brush')} className={tool === 'brush' ? 'text-[#D4AF37]' : 'text-white/60 hover:text-white'}><Pencil size={22} /></button>
+        <button onClick={() => setTool('bucket')} className={tool === 'bucket' ? 'text-[#D4AF37]' : 'text-white/60 hover:text-white'}><PaintBucket size={22} /></button>
+        <button onClick={() => setTool('eraser')} className={tool === 'eraser' ? 'text-[#D4AF37]' : 'text-white/60 hover:text-white'}><Eraser size={22} /></button>
+        <div className="h-[1px] bg-white/10 my-1" />
+        <button onClick={() => setIsMirroring(!isMirroring)} className={isMirroring ? 'text-[#D4AF37]' : 'text-white/60 hover:text-white'}><Columns size={22} /></button>
+        <button onClick={() => {}} className="text-white/60 hover:text-white"><Undo2 size={22} /></button>
       </div>
 
       {/* --- CENTER CANVAS AREA --- */}
@@ -126,23 +126,23 @@ const SketchCanvas = () => {
       </div>
 
       {/* --- RIGHT LAYER PANEL --- */}
-      <div className="w-64 bg-charcoal border-l border-white/10 p-4 flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <h4 className="text-gold font-serif italic text-lg">Layers</h4>
-          <button onClick={addLayer} className="text-white hover:text-gold"><Copy size={18} /></button>
+      <div className="w-68 bg-[#121212] border-l border-white/10 p-5 flex flex-col h-full shadow-2xl z-50">
+        <div className="flex justify-between items-center mb-8">
+          <h4 className="text-[#D4AF37] font-serif italic text-xl tracking-wide">Studio Layers</h4>
+          <button onClick={addLayer} className="text-white/80 hover:text-[#D4AF37] transition-colors"><Copy size={20} /></button>
         </div>
         
-        <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+        <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
           {layers.map((layer) => (
             <div 
               key={layer.id} 
               onClick={() => setActiveLayerId(layer.id)}
-              className={`p-3 rounded flex items-center justify-between cursor-pointer border ${activeLayerId === layer.id ? 'bg-white/10 border-gold/50' : 'bg-transparent border-white/5'}`}
+              className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-all duration-200 ${activeLayerId === layer.id ? 'bg-[#800020] border-[#D4AF37]/50 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
             >
-              <span className="text-xs text-white/80">{layer.name}</span>
-              <div className="flex gap-2">
-                <button onClick={() => moveLayer(layer.id, 'up')}><ChevronUp size={14} /></button>
-                <button onClick={() => moveLayer(layer.id, 'down')}><ChevronDown size={14} /></button>
+              <span className={`text-sm font-medium ${activeLayerId === layer.id ? 'text-white' : 'text-white/70'}`}>{layer.name}</span>
+              <div className="flex gap-3 text-white/40">
+                <button onClick={(e) => { e.stopPropagation(); moveLayer(layer.id, 'up'); }} className="hover:text-white"><ChevronUp size={16} /></button>
+                <button onClick={(e) => { e.stopPropagation(); moveLayer(layer.id, 'down'); }} className="hover:text-white"><ChevronDown size={16} /></button>
               </div>
             </div>
           ))}
