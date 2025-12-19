@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Gallery from './components/Gallery';
-import SketchCanvas from './components/SketchCanvas';
-import StudioWorkspace from './components/StudioWorkspace';
+import Gallery from './Gallery';
+import SketchCanvas from './SketchCanvas';
+import StudioWorkspace from './StudioWorkspace';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'GALLERY' | 'WORKBENCH'>('GALLERY');
