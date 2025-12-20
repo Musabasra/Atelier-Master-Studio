@@ -5,14 +5,14 @@ const Gallery = ({ onOpen }) => {
   { 
     id: 1, 
     title: 'Avant-Garde Sculpture', 
-    sketchUrl: './sketch1.png', 
-    renderedUrl: './render1.png' 
+    sketchUrl: 'https://postimg.cc/w125n383', 
+    renderedUrl: 'https://postimg.cc/RNQwnq0H' 
   },
   { 
     id: 2, 
     title: 'Editorial Silhouette', 
-    sketchUrl: './sketch2.png', 
-    renderedUrl: './render2.png'
+    sketchUrl: 'https://postimg.cc/bD711tbF', 
+    renderedUrl: 'https://postimg.cc/ZBddY5gR'
   }
 ];
 

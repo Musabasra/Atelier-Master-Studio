@@ -25,20 +25,31 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
 
   // Initialize Layers
   useEffect(() => {
-    if (sketch?.sketchUrl && layers.length > 0) {
-      const img = new Image();
-      // Remove crossOrigin for local files
-      img.onload = () => {
-        const canvas = layers.find(l => l.id === 1)?.canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        if (ctx && canvas) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-      };
-      img.src = sketch.sketchUrl;
-    }
-  }, [sketch, layers]);
+  if (sketch?.sketchUrl && layers.length > 0) {
+    const img = new Image();
+    
+    // THIS LINE IS CRITICAL FOR EXTERNAL LINKS
+    img.setAttribute('crossOrigin', 'anonymous'); 
+    
+    img.onload = () => {
+      const canvas = layers.find(l => l.id === 1)?.canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (ctx && canvas) {
+        // Clear everything first
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw the new image
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        console.log("Image loaded successfully onto canvas");
+      }
+    };
+
+    img.onerror = (err) => {
+      console.error("Failed to load image:", sketch.sketchUrl);
+    };
+
+    img.src = sketch.sketchUrl;
+  }
+}, [sketch, layers]);
 
   // --- NEW: AUTO-LOAD SKETCH IMAGE ---
   useEffect(() => {
