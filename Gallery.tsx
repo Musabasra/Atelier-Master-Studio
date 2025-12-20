@@ -1,20 +1,20 @@
 import React from 'react';
 
 const Gallery = ({ onOpen }) => {
-  const projects = [
-    { 
-      id: 1, 
-      title: 'Avant-Garde Sculpture', 
-      sketchUrl: 'https://1drv.ms/i/c/a853538bdcaeeced/IQBg4E56cOdaSbgjLdcOKA1oAfLemtz9tztF5dgmeKrIc8w?e=k1nwLl', 
-      renderedUrl: 'https://1drv.ms/i/c/a853538bdcaeeced/IQBnk6ZKtZQMQpUnSXfuZYfyAXm_QMMmYtAy05GmrTzcF8A?e=HhjCcY' 
-    },
-    { 
-      id: 2, 
-      title: 'Editorial Silhouette', 
-      sketchUrl: 'https://1drv.ms/i/c/a853538bdcaeeced/IQAGEWwSTx9xTI2-TSL2TDQnAae8TlWLQseiCWh85x5mLAg?e=lgKrHu', 
-      renderedUrl: 'https://1drv.ms/i/c/a853538bdcaeeced/IQDBqjUovFenR5RnJD6YuB6aASzNiCYl_tihytnUdULasc8?e=lwP4lI'
-    }
-  ];
+ const projects = [
+  { 
+    id: 1, 
+    title: 'Avant-Garde Sculpture', 
+    sketchUrl: './sketch1.png', 
+    renderedUrl: './render1.png' 
+  },
+  { 
+    id: 2, 
+    title: 'Editorial Silhouette', 
+    sketchUrl: './sketch2.png', 
+    renderedUrl: './render2.png'
+  }
+];
 
   return (
     <div className="max-w-7xl mx-auto p-12">

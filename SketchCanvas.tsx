@@ -25,13 +25,20 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
 
   // Initialize Layers
   useEffect(() => {
-    const initialLayers = [
-      { id: 0, name: 'Base Croquis', visible: true, canvasRef: React.createRef<HTMLCanvasElement>() },
-      { id: 1, name: 'Design Layer', visible: true, canvasRef: React.createRef<HTMLCanvasElement>() }
-    ];
-    setLayers(initialLayers);
-    setActiveLayerId(1);
-  }, []);
+    if (sketch?.sketchUrl && layers.length > 0) {
+      const img = new Image();
+      // Remove crossOrigin for local files
+      img.onload = () => {
+        const canvas = layers.find(l => l.id === 1)?.canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (ctx && canvas) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+      };
+      img.src = sketch.sketchUrl;
+    }
+  }, [sketch, layers]);
 
   // --- NEW: AUTO-LOAD SKETCH IMAGE ---
   useEffect(() => {
