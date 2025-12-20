@@ -5,14 +5,14 @@ const Gallery = ({ onOpen }) => {
   { 
     id: 1, 
     title: 'Avant-Garde Sculpture', 
-    sketchUrl: 'https://i.postimg.cc/w125n383/image.jpg', 
-    renderedUrl: 'https://i.postimg.cc/RNQwnq0H/image.jpg' 
+    sketchUrl: 'https://i.postimg.cc/mrfdzFm3/sketch1.png',
+    renderedUrl: 'https://i.postimg.cc/Wbx8CkLX/render1.png' 
   },
   { 
     id: 2, 
     title: 'Editorial Silhouette', 
-    sketchUrl: 'https://i.postimg.cc/bD711tbF/image.jpg', 
-    renderedUrl: 'https://i.postimg.cc/ZBddY5gR/image.jpg'
+    sketchUrl: 'https://i.postimg.cc/T1wQMjPG/sketch2.png', 
+    renderedUrl: 'https://i.postimg.cc/XJ2c8Zkw/render2.png'
   }
 ];
   return (
