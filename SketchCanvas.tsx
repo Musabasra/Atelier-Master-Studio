@@ -12,10 +12,12 @@ interface Layer {
   canvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
-// Added 'sketch' prop to receive data from Gallery via App.tsx
 const SketchCanvas = ({ sketch }: { sketch: any }) => {
-  const [layers, setLayers] = useState<Layer[]>([]);
-  const [activeLayerId, setActiveLayerId] = useState<number>(0);
+  // Initialize with a default base layer so the canvas is ready immediately
+  const [layers, setLayers] = useState<Layer[]>([
+    { id: 1, name: 'Base Manuscript', visible: true, canvasRef: React.createRef<HTMLCanvasElement>() }
+  ]);
+  const [activeLayerId, setActiveLayerId] = useState<number>(1);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState('#800020');
   const [lineWidth, setLineWidth] = useState(2);
@@ -23,51 +25,31 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
   const [tool, setTool] = useState<'brush' | 'eraser' | 'bucket'>('brush');
   const [showPanel, setShowPanel] = useState(true);
 
-  // Initialize Layers
-  useEffect(() => {
-  if (sketch?.sketchUrl && layers.length > 0) {
-    const img = new Image();
-    
-    // THIS LINE IS CRITICAL FOR EXTERNAL LINKS
-    img.setAttribute('crossOrigin', 'anonymous'); 
-    
-    img.onload = () => {
-      const canvas = layers.find(l => l.id === 1)?.canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (ctx && canvas) {
-        // Clear everything first
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Draw the new image
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        console.log("Image loaded successfully onto canvas");
-      }
-    };
-
-    img.onerror = (err) => {
-      console.error("Failed to load image:", sketch.sketchUrl);
-    };
-
-    img.src = sketch.sketchUrl;
-  }
-}, [sketch, layers]);
-
-  // --- NEW: AUTO-LOAD SKETCH IMAGE ---
+  // --- FIX: IMAGE AUTO-LOAD & CENTERING ---
   useEffect(() => {
     if (sketch?.sketchUrl && layers.length > 0) {
       const img = new Image();
-      img.crossOrigin = "anonymous"; // Helps with loading external links
+      img.crossOrigin = "anonymous"; 
+      
       img.onload = () => {
-        // Target the Design Layer (ID 1)
-        const canvas = layers.find(l => l.id === 1)?.canvasRef.current;
+        // Target the active layer or first layer
+        const canvas = layers[0].canvasRef.current;
         const ctx = canvas?.getContext('2d');
+        
         if (ctx && canvas) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous work
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // CALCULATE SCALE TO FIT WITHOUT STRETCHING
+          const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+          const x = (canvas.width / 2) - (img.width / 2) * scale;
+          const y = (canvas.height / 2) - (img.height / 2) * scale;
+          
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
         }
       };
       img.src = sketch.sketchUrl;
     }
-  }, [sketch, layers]);
+  }, [sketch]); // Runs whenever the 'sketch' prop changes from the gallery
 
   const getActiveCtx = () => {
     const layer = layers.find(l => l.id === activeLayerId);
@@ -100,7 +82,7 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
       const centerX = canvas.width / 2;
       const mirroredX = centerX + (centerX - offsetX);
       ctx.save(); 
-      ctx.beginPath(); // New path for mirror to avoid connecting lines
+      ctx.beginPath();
       ctx.moveTo(mirroredX, offsetY);
       ctx.lineTo(mirroredX, offsetY); 
       ctx.stroke();
@@ -136,35 +118,16 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
   return (
     <div className="flex h-full w-full bg-[#1a1a1a] overflow-hidden relative">
       
-      {/* --- LEFT TOOLBAR --- */}
+      {/* TOOLBAR */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#121212] p-3 rounded-2xl flex flex-col gap-5 shadow-2xl border border-white/10 z-50">
         <button onClick={() => setTool('brush')} className={tool === 'brush' ? 'text-[#D4AF37]' : 'text-white/60'}><Pencil size={22} /></button>
         <button onClick={() => setTool('bucket')} className={tool === 'bucket' ? 'text-[#D4AF37]' : 'text-white/60'}><PaintBucket size={22} /></button>
         <button onClick={() => setTool('eraser')} className={tool === 'eraser' ? 'text-[#D4AF37]' : 'text-white/60'}><Eraser size={22} /></button>
-        
         <div className="h-[1px] bg-white/10 my-1" />
-        
-        <label className="cursor-pointer text-white/60 hover:text-[#D4AF37] transition-colors">
-          <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => getActiveCtx()?.drawImage(img, 0, 0, 500, 700);
-                img.src = ev.target?.result as string;
-              };
-              reader.readAsDataURL(file);
-            }
-          }} />
-          <Wand2 size={22} />
-        </label>
-
         <button onClick={() => setIsMirroring(!isMirroring)} className={isMirroring ? 'text-[#D4AF37]' : 'text-white/60'}><Columns size={22} /></button>
-        <button className="text-white/60"><Undo2 size={22} /></button>
       </div>
 
-      {/* --- CENTER CANVAS --- */}
+      {/* CENTER CANVAS CONTAINER */}
       <div className="flex-1 relative flex items-center justify-center p-10 bg-[#0d0d0d]">
         <div className="relative w-[500px] h-[700px] bg-white shadow-2xl border border-[#D4AF37]/20">
           {layers.map((layer) => (
@@ -183,39 +146,24 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
         </div>
       </div>
 
-      {/* --- LAYER PANEL TOGGLE --- */}
-      {!showPanel && (
-        <button 
-          onClick={() => setShowPanel(true)}
-          className="absolute right-6 top-6 bg-[#1a1a1a] p-3 rounded-full border border-[#D4AF37]/40 text-[#D4AF37] shadow-xl z-50 hover:scale-110 transition-transform"
-        >
-          <Layers size={24} />
-        </button>
-      )}
-
-      {/* --- RIGHT LAYER PANEL --- */}
+      {/* LAYER PANEL */}
       {showPanel && (
         <div className="w-72 bg-[#121212] border-l border-white/10 p-5 flex flex-col h-full shadow-2xl z-50 text-white">
           <div className="flex justify-between items-center mb-8">
             <h4 className="text-[#D4AF37] font-serif italic text-xl tracking-widest">Layers</h4>
-            <div className="flex gap-3">
-              <button onClick={addLayer} className="text-white/60 hover:text-[#D4AF37]"><Copy size={18} /></button>
-              <button onClick={() => setShowPanel(false)} className="text-white/60 hover:text-red-400"><X size={18} /></button>
-            </div>
+            <button onClick={addLayer} className="text-white/60 hover:text-[#D4AF37]"><Copy size={18} /></button>
           </div>
           
           <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
-            {layers.map((layer) => (
+            {[...layers].reverse().map((layer) => (
               <div 
                 key={layer.id} 
                 onClick={() => setActiveLayerId(layer.id)}
-                className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-all ${activeLayerId === layer.id ? 'bg-[#800020] border-[#D4AF37]/50 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                className={`p-4 rounded-xl flex items-center justify-between cursor-pointer border transition-all ${activeLayerId === layer.id ? 'bg-[#800020] border-[#D4AF37]/50 shadow-lg' : 'bg-white/5 border-white/10'}`}
               >
                 <span className="text-sm font-medium">{layer.name}</span>
-                <div className="flex gap-2 text-white/40">
+                <div className="flex gap-2">
                   <button onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} className="hover:text-red-500"><Trash2 size={16} /></button>
-                  <button onClick={(e) => { e.stopPropagation(); moveLayer(layer.id, 'up'); }} className="hover:text-white"><ChevronUp size={16} /></button>
-                  <button onClick={(e) => { e.stopPropagation(); moveLayer(layer.id, 'down'); }} className="hover:text-white"><ChevronDown size={16} /></button>
                 </div>
               </div>
             ))}
