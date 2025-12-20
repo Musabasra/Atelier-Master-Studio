@@ -5,7 +5,7 @@ import StudioWorkspace from './StudioWorkspace.tsx';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'GALLERY' | 'WORKBENCH'>('GALLERY');
-  const [showAI, setShowAI] = useState(true); // Toggle for the side-by-side view
+  const [showAI, setShowAI] = useState(true); 
   const [currentSketch, setCurrentSketch] = useState<any>(null);
 
   const handleOpenProject = (sketch: any) => {
@@ -14,50 +14,58 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-charcoal text-white flex flex-col overflow-hidden">
-      <nav className="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-charcoal">
-        <div className="flex items-center gap-8">
-          <h1 className="font-serif text-2xl text-gold tracking-tighter">ATELIER MASTER</h1>
-          <button 
-            onClick={() => setView('GALLERY')}
-            className={`text-xs uppercase tracking-widest ${view === 'GALLERY' ? 'text-gold' : 'text-white/50'}`}
-          >
-            Gallery
-          </button>
-          <button 
-            onClick={() => setView('WORKBENCH')}
-            className={`text-xs uppercase tracking-widest ${view === 'WORKBENCH' ? 'text-gold' : 'text-white/50'}`}
-          >
-            Workbench
-          </button>
+    <div className="h-screen w-full bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
+      {/* --- NAVIGATION BAR --- */}
+      <nav className="h-20 border-b border-white/5 flex items-center justify-between px-10 bg-[#121212] z-50">
+        <div className="flex items-center gap-12">
+          <h1 className="font-serif text-3xl text-[#D4AF37] tracking-tighter italic">ATELIER MASTER</h1>
+          <div className="flex gap-8">
+            <button 
+              onClick={() => setView('GALLERY')}
+              className={`text-[10px] uppercase tracking-[0.3em] transition-colors ${view === 'GALLERY' ? 'text-[#D4AF37]' : 'text-white/30 hover:text-white'}`}
+            >
+              The Gallery
+            </button>
+            <button 
+              onClick={() => setView('WORKBENCH')}
+              className={`text-[10px] uppercase tracking-[0.3em] transition-colors ${view === 'WORKBENCH' ? 'text-[#D4AF37]' : 'text-white/30 hover:text-white'}`}
+            >
+              The Studio
+            </button>
+          </div>
         </div>
 
         {view === 'WORKBENCH' && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => setShowAI(!showAI)}
-              className="px-4 py-1 border border-gold text-gold text-xs rounded-full hover:bg-gold hover:text-charcoal transition"
+              className="px-5 py-2 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] tracking-widest rounded-full hover:bg-[#D4AF37] hover:text-black transition-all"
             >
-              {showAI ? 'Hide AI Preview' : 'Show AI Preview'}
+              {showAI ? 'HIDE AI PREVIEW' : 'SHOW AI PREVIEW'}
             </button>
-            <button className="bg-burgundy px-6 py-1 text-xs rounded-full">Sync from Mobile</button>
+            <button className="bg-[#800020] px-8 py-2 text-[10px] tracking-widest rounded-full border border-[#D4AF37]/20 shadow-lg hover:brightness-125 transition-all">
+              SYNC MOBILE
+            </button>
           </div>
         )}
       </nav>
 
-      <main class="flex-1 relative overflow-hidden">
+      {/* --- MAIN CONTENT AREA --- */}
+      <main className="flex-1 relative overflow-hidden bg-[#0d0d0d]">
         {view === 'GALLERY' ? (
-          <Gallery onOpen={handleOpenProject} />
+          <div className="h-full overflow-y-auto">
+            <Gallery onOpen={handleOpenProject} />
+          </div>
         ) : (
           <div className="flex h-full w-full">
             {/* Left Side: The Sketch Canvas */}
-            <div className={`${showAI ? 'w-1/2' : 'w-full'} h-full border-r border-white/5 transition-all duration-500`}>
+            <div className={`${showAI ? 'w-1/2' : 'w-full'} h-full border-r border-white/5 transition-all duration-700 ease-in-out`}>
               <SketchCanvas sketch={currentSketch} />
             </div>
 
             {/* Right Side: The AI Studio (Hideable) */}
             {showAI && (
-              <div className="w-1/2 h-full bg-[#0a0a0a] transition-all duration-500 animate-in fade-in slide-in-from-right-4">
+              <div className="w-1/2 h-full bg-[#050505] transition-all duration-700 animate-in fade-in slide-in-from-right-10">
                 <StudioWorkspace sketch={currentSketch} />
               </div>
             )}
