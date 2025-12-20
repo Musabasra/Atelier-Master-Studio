@@ -5,17 +5,16 @@ const Gallery = ({ onOpen }) => {
   { 
     id: 1, 
     title: 'Avant-Garde Sculpture', 
-    sketchUrl: 'https://postimg.cc/w125n383', 
-    renderedUrl: 'https://postimg.cc/RNQwnq0H' 
+    sketchUrl: 'https://i.postimg.cc/w125n383/image.jpg', 
+    renderedUrl: 'https://i.postimg.cc/RNQwnq0H/image.jpg' 
   },
   { 
     id: 2, 
     title: 'Editorial Silhouette', 
-    sketchUrl: 'https://postimg.cc/bD711tbF', 
-    renderedUrl: 'https://postimg.cc/ZBddY5gR'
+    sketchUrl: 'https://i.postimg.cc/bD711tbF/image.jpg', 
+    renderedUrl: 'https://i.postimg.cc/ZBddY5gR/image.jpg'
   }
 ];
-
   return (
     <div className="max-w-7xl mx-auto p-12">
       <div className="mb-12 border-b border-gold/20 pb-6">
