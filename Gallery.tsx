@@ -33,11 +33,11 @@ const Gallery = ({ onOpen }) => {
             {/* Image Container */}
             <div className="relative h-80 w-full overflow-hidden">
               <img 
-                src={p.sketchUrl} 
-                alt={p.title} 
-                className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-80" />
+  src={p.sketchUrl} 
+  alt={p.title} 
+  key={p.sketchUrl} // Adding a key forces the browser to look for the image again
+  className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" 
+/>
               
               {/* Floating Badge */}
               <div className="absolute top-4 right-4 bg-[#800020] text-white text-[10px] tracking-widest px-3 py-1 rounded-full border border-[#D4AF37]/30 opacity-0 group-hover:opacity-100 transition-opacity">
