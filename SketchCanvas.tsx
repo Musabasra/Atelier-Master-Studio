@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { 
   Pencil, Eraser, Trash2, Layers, Copy, 
   ChevronUp, ChevronDown, Wand2, PaintBucket, 
-  Columns, Undo2, X, Eye, EyeOff, Pipette
+  Columns, Undo2, X, Eye, EyeOff, Pipette,
+  MousePointer2, HighlightingWand
 } from 'lucide-react';
 
 interface Layer {
@@ -22,9 +23,14 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
   const [lineWidth, setLineWidth] = useState(2);
   const [isMirroring, setIsMirroring] = useState(true);
   const [tool, setTool] = useState<'brush' | 'eraser' | 'bucket' | 'eyedropper'>('brush');
+  const [brushType, setBrushType] = useState<'solid' | 'airbrush' | 'sketch'>('solid');
   const [showPanel, setShowPanel] = useState(true);
 
-  // --- IMAGE AUTO-LOAD & SCALE-TO-FIT ---
+  // --- NEW: UNDO/REDO STATE ---
+  const [history, setHistory] = useState<ImageData[]>([]);
+  const [redoStack, setRedoStack] = useState<ImageData[]>([]);
+
+  // --- IMAGE AUTO-LOAD ---
   useEffect(() => {
     if (sketch?.sketchUrl && layers.length > 0) {
       const img = new Image();
@@ -38,6 +44,7 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
           const x = (canvas.width / 2) - (img.width / 2) * scale;
           const y = (canvas.height / 2) - (img.height / 2) * scale;
           ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          saveToHistory(); // Save initial loaded image to history
         }
       };
       img.src = sketch.sketchUrl;
@@ -49,7 +56,40 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
     return layer?.canvasRef.current?.getContext('2d');
   };
 
-  // --- PIXEL MANIPULATION HELPERS ---
+  // --- UNDO/REDO LOGIC ---
+  const saveToHistory = () => {
+    const ctx = getActiveCtx();
+    if (!ctx) return;
+    const snapshot = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+    setHistory(prev => [...prev.slice(-19), snapshot]); // Keep last 20 steps
+    setRedoStack([]);
+  };
+
+  const handleUndo = () => {
+    if (history.length <= 1) return;
+    const ctx = getActiveCtx();
+    if (!ctx) return;
+
+    const current = history[history.length - 1];
+    const previous = history[history.length - 2];
+
+    setRedoStack(prev => [...prev, current]);
+    setHistory(prev => prev.slice(0, -1));
+    ctx.putImageData(previous, 0, 0);
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const ctx = getActiveCtx();
+    if (!ctx) return;
+
+    const next = redoStack[redoStack.length - 1];
+    setHistory(prev => [...prev, next]);
+    setRedoStack(prev => prev.slice(0, -1));
+    ctx.putImageData(next, 0, 0);
+  };
+
+  // --- PIXEL HELPERS ---
   const getPixel = (imgData: ImageData, x: number, y: number) => {
     const i = (y * imgData.width + x) * 4;
     return [imgData.data[i], imgData.data[i+1], imgData.data[i+2], imgData.data[i+3]];
@@ -57,10 +97,8 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
 
   const setPixel = (imgData: ImageData, x: number, y: number, color: number[]) => {
     const i = (y * imgData.width + x) * 4;
-    imgData.data[i] = color[0];
-    imgData.data[i+1] = color[1];
-    imgData.data[i+2] = color[2];
-    imgData.data[i+3] = 255;
+    imgData.data[i] = color[0]; imgData.data[i+1] = color[1];
+    imgData.data[i+2] = color[2]; imgData.data[i+3] = 255;
   };
 
   const hexToRgb = (hex: string) => {
@@ -70,19 +108,16 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
     return [r, g, b];
   };
 
-  // --- FLOOD FILL (BUCKET TOOL) ---
   const handleFloodFill = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+    saveToHistory();
     const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
     const targetColor = getPixel(imageData, x, y);
     const fillRGB = hexToRgb(color);
-
     if (targetColor[0] === fillRGB[0] && targetColor[1] === fillRGB[1] && targetColor[2] === fillRGB[2]) return;
-
     const queue: [number, number][] = [[x, y]];
     while (queue.length > 0) {
       const [currX, currY] = queue.shift()!;
       const currentColor = getPixel(imageData, currX, currY);
-
       if (currentColor[0] === targetColor[0] && currentColor[1] === targetColor[1] && currentColor[2] === targetColor[2]) {
         setPixel(imageData, currX, currY, fillRGB);
         if (currX + 1 < imageData.width) queue.push([currX + 1, currY]);
@@ -103,23 +138,22 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
     const x = Math.floor(offsetX);
     const y = Math.floor(offsetY);
 
-    if (tool === 'bucket') {
-      handleFloodFill(ctx, x, y);
-      return;
-    }
-
+    if (tool === 'bucket') { handleFloodFill(ctx, x, y); return; }
     if (tool === 'eyedropper') {
       const pixel = ctx.getImageData(x, y, 1, 1).data;
       const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`;
-      setColor(hex);
-      setTool('brush');
-      return;
+      setColor(hex); setTool('brush'); return;
     }
 
+    saveToHistory();
     ctx.beginPath();
     ctx.moveTo(x, y);
     
-    // Switch between painting and erasing
+    // Apply Brush Type
+    ctx.shadowBlur = brushType === 'airbrush' ? lineWidth : 0;
+    ctx.shadowColor = brushType === 'airbrush' ? color : 'transparent';
+    ctx.globalAlpha = brushType === 'sketch' ? 0.5 : 1.0;
+
     if (tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = lineWidth * 5; 
@@ -147,7 +181,6 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
       const canvas = ctx.canvas;
       const mirroredX = canvas.width - offsetX;
       ctx.save();
-      // Draw mirroring stroke using separate point to avoid connecting line
       ctx.beginPath();
       ctx.arc(mirroredX, offsetY, ctx.lineWidth / 2, 0, Math.PI * 2);
       if (tool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
@@ -157,9 +190,13 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
     }
   };
 
-  const stopDrawing = () => setIsDrawing(false);
+  const stopDrawing = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      saveToHistory(); // Save the final state of the stroke
+    }
+  };
 
-  // Layer Management
   const addLayer = () => {
     const newId = Date.now();
     setLayers([...layers, { id: newId, name: `Layer ${layers.length + 1}`, visible: true, canvasRef: React.createRef<HTMLCanvasElement>() }]);
@@ -167,22 +204,48 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#1a1a1a] overflow-hidden relative">
+    <div className="flex h-full w-full bg-[#1a1a1a] overflow-hidden relative font-sans">
       
-      {/* SIDE TOOLBAR */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#121212] p-3 rounded-2xl flex flex-col gap-5 shadow-2xl border border-white/10 z-50">
-        <button onClick={() => setTool('brush')} className={tool === 'brush' ? 'text-[#D4AF37]' : 'text-white/60'}><Pencil size={20} /></button>
-        <button onClick={() => setTool('eraser')} className={tool === 'eraser' ? 'text-[#D4AF37]' : 'text-white/60'}><Eraser size={20} /></button>
-        <button onClick={() => setTool('bucket')} className={tool === 'bucket' ? 'text-[#D4AF37]' : 'text-white/60'}><PaintBucket size={20} /></button>
-        <button onClick={() => setTool('eyedropper')} className={tool === 'eyedropper' ? 'text-[#D4AF37]' : 'text-white/60'}><Pipette size={20} /></button>
-        <div className="h-[1px] bg-white/10 my-1" />
+      {/* --- EXTENDED SIDE TOOLBAR --- */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-[#121212] p-4 rounded-3xl flex flex-col gap-6 shadow-2xl border border-white/10 z-50 items-center">
+        
+        {/* Undo / Redo Group */}
+        <div className="flex flex-col gap-4 border-b border-white/5 pb-4">
+            <button onClick={handleUndo} className="text-white/40 hover:text-[#D4AF37] transition-colors" title="Undo"><Undo2 size={18} /></button>
+            <button onClick={handleRedo} className="text-white/40 hover:text-[#D4AF37] transition-colors rotate-180" title="Redo"><Undo2 size={18} /></button>
+        </div>
+
+        {/* Brush Types */}
+        <div className="flex flex-col gap-4 border-b border-white/5 pb-4">
+            <button onClick={() => {setTool('brush'); setBrushType('solid')}} className={tool === 'brush' && brushType === 'solid' ? 'text-[#D4AF37]' : 'text-white/40'} title="Solid Brush"><Pencil size={20} /></button>
+            <button onClick={() => {setTool('brush'); setBrushType('sketch')}} className={tool === 'brush' && brushType === 'sketch' ? 'text-[#D4AF37]' : 'text-white/40'} title="Sketch Pencil"><MousePointer2 size={20} /></button>
+            <button onClick={() => {setTool('brush'); setBrushType('airbrush')}} className={tool === 'brush' && brushType === 'airbrush' ? 'text-[#D4AF37]' : 'text-white/40'} title="Airbrush"><Wand2 size={20} /></button>
+            <button onClick={() => setTool('eraser')} className={tool === 'eraser' ? 'text-[#D4AF37]' : 'text-white/60'} title="Eraser"><Eraser size={20} /></button>
+        </div>
+
+        {/* Bucket & Pipette */}
+        <div className="flex flex-col gap-4 border-b border-white/5 pb-4">
+            <button onClick={() => setTool('bucket')} className={tool === 'bucket' ? 'text-[#D4AF37]' : 'text-white/60'}><PaintBucket size={20} /></button>
+            <button onClick={() => setTool('eyedropper')} className={tool === 'eyedropper' ? 'text-[#D4AF37]' : 'text-white/60'}><Pipette size={20} /></button>
+        </div>
+
+        {/* Size Slider */}
+        <div className="flex flex-col items-center gap-2">
+            <span className="text-[8px] uppercase tracking-tighter text-[#D4AF37]">Size</span>
+            <input 
+                type="range" min="1" max="40" value={lineWidth} 
+                onChange={(e) => setLineWidth(parseInt(e.target.value))}
+                className="w-16 h-1 accent-[#D4AF37] cursor-pointer"
+            />
+        </div>
+
         <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-6 h-6 rounded-full overflow-hidden border-none bg-transparent cursor-pointer" />
         <button onClick={() => setIsMirroring(!isMirroring)} className={isMirroring ? 'text-[#D4AF37]' : 'text-white/60'}><Columns size={20} /></button>
       </div>
 
-      {/* CANVAS AREA */}
+      {/* --- CANVAS AREA --- */}
       <div className="flex-1 relative flex items-center justify-center p-10 bg-[#0d0d0d]">
-        <div className="relative w-[500px] h-[700px] bg-white shadow-2xl overflow-hidden">
+        <div className="relative w-[500px] h-[700px] bg-white shadow-2xl overflow-hidden cursor-crosshair">
           {layers.map((layer) => (
             <canvas
               key={layer.id}
@@ -200,12 +263,12 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
         </div>
       </div>
 
-      {/* LAYER PANEL */}
+      {/* --- LAYER PANEL --- */}
       {showPanel && (
-        <div className="w-72 bg-[#121212] border-l border-white/10 p-5 flex flex-col h-full shadow-2xl z-50 text-white font-sans">
+        <div className="w-72 bg-[#121212] border-l border-white/10 p-5 flex flex-col h-full shadow-2xl z-50 text-white">
           <div className="flex justify-between items-center mb-8">
-            <h4 className="text-[#D4AF37] font-serif italic text-xl tracking-widest">Studio Layers</h4>
-            <button onClick={addLayer} className="hover:text-[#D4AF37] transition-colors"><Copy size={18} /></button>
+            <h4 className="text-[#D4AF37] font-serif italic text-xl tracking-widest uppercase text-xs">Studio Layers</h4>
+            <button onClick={addLayer} className="hover:text-[#D4AF37] transition-colors"><Copy size={16} /></button>
           </div>
           <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
             {[...layers].reverse().map((layer) => (
@@ -216,11 +279,9 @@ const SketchCanvas = ({ sketch }: { sketch: any }) => {
               >
                 <div className="flex items-center gap-3">
                    <div className={`w-2 h-2 rounded-full ${activeLayerId === layer.id ? 'bg-[#D4AF37]' : 'bg-white/20'}`} />
-                   <span className="text-sm tracking-wide">{layer.name}</span>
+                   <span className="text-[10px] uppercase tracking-widest font-medium">{layer.name}</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); /* Add visibility toggle logic here */ }} className="text-white/20 hover:text-white">
-                  <Eye size={16} />
-                </button>
+                <Eye size={14} className="text-white/20" />
               </div>
             ))}
           </div>
